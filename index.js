@@ -3,6 +3,7 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
+const ObjectId = require('mongodb').ObjectId;
 
 app.use(cors());
 app.use(express.json());
@@ -12,7 +13,7 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log('node mongo crud', port)
+    console.log('node mongo crud is running', port)
 })
 
 // user: dbuser1
@@ -22,25 +23,36 @@ app.listen(port, () => {
 const uri = "mongodb+srv://dbuser1:De7LaieT5TkGPcUK@cluster0.sidhf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// client.connect(err => {
-//     const collection = client.db("foodExpress").collection("users");
-//     console.log('db connected');
-//     // perform actions on the collection object
-//     client.close();
-// });
 
 async function run() {
     try {
         await client.connect();
         const userCollection = client.db("foodExpress").collection("user");
-        // const user = { name: 'Mahia mahi', email: 'mahi@gmail.com' };
-        // const result = await userCollection.insertOne(user);
-        // console.log(`User inserted with id: ${result.insertedId}`);
-        app.post('/user', (req, res) => {
+
+        // get a user
+        app.get('/user', async (req, res) => {
+            const query = {};
+            const cursor = userCollection.find(query);
+            const users = await cursor.toArray();
+            res.send(users)
+        })
+
+        // post user : add a new user
+        app.post('/user', async (req, res) => {
             const newUser = req.body;
             console.log('adding new user', newUser);
-            res.send({ result: 'success' });
+            const result = await userCollection.insertOne(newUser)
+            res.send(result);
         });
+
+        // delete a user
+        app.delete('/user/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        })
+
     }
     finally {
         // await client.close();
